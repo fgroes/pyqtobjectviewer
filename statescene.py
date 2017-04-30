@@ -5,7 +5,7 @@ from PyQt4 import QtGui, QtCore
 
 class StateWidget(QtGui.QWidget):
 
-    moved = QtCore.pyqtSignal(str, int, int)
+    moved = QtCore.pyqtSignal(str)
 
     def __init__(self, name, parent=None):
         super(StateWidget, self).__init__(parent)
@@ -34,7 +34,7 @@ class StateWidget(QtGui.QWidget):
             new_pos = self.mapFromGlobal(curr_pos + mouse_diff)
             self.move(new_pos)
             self._mouse_move_pos = mouse_pos
-            self.moved.emit(self._name, mouse_diff.x(), mouse_diff.y())
+            self.moved.emit(self._name)
 
     def mouseReleaseEvent(self, e):
         if e.buttons() == QtCore.Qt.LeftButton:
@@ -68,6 +68,7 @@ class StateScene(QtGui.QGraphicsView):
             sw = StateWidget(state)
             sw.moved.connect(self.on_state_moved)
             ssw = scene.addWidget(sw)
+            ssw.setZValue(1)
             px = r * np.cos(dangle * i) - sw.width() / 2
             py = r * np.sin(dangle * i) - sw.height() / 2
             sw.move(px, py)
@@ -83,6 +84,7 @@ class StateScene(QtGui.QGraphicsView):
             x2 = target_sw.x() + target_sw.widget().width() / 2
             y2 = target_sw.y() + target_sw.widget().height() / 2
             line = scene.addLine(x1, y1, x2, y2)
+            line.setZValue(0)
             if transitions[0] not in self._transition_source_dict:
                 self._transition_source_dict[transitions[0]] = []
             self._transition_source_dict[transitions[0]].append(line)
@@ -92,17 +94,20 @@ class StateScene(QtGui.QGraphicsView):
 
         self.show()
 
-    def on_state_moved(self, name, x, y):
+    def on_state_moved(self, name):
         name = str(name)
+        sw = self._states_dict[name]
+        x = sw.x() + sw.widget().width() / 2
+        y = sw.y() + sw.widget().height() / 2
         if name in self._transition_source_dict:
             for line in self._transition_source_dict[name]:
                 l = line.line()
-                new_l = QtCore.QLineF(l.x1() + x, l.y1() + y, l.x2(), l.y2())
+                new_l = QtCore.QLineF(x, y, l.x2(), l.y2())
                 line.setLine(new_l)
         if name in self._transition_target_dict:
             for line in self._transition_target_dict[name]:
                 l = line.line()
-                new_l = QtCore.QLineF(l.x1(), l.y1(), l.x2() + x, l.y2() + y)
+                new_l = QtCore.QLineF(l.x1(), l.y1(), x, y)
                 line.setLine(new_l)
 
 
