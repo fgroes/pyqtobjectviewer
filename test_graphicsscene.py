@@ -3,6 +3,19 @@ import numpy as np
 from PyQt4 import QtGui, QtCore
 
 
+class StateGraphicsItem(QtGui.QGraphicsItemGroup):
+
+    def mouseMoveEvent(self, e):
+        print(e.pos())
+        p = e.pos()
+        l = self.line.line()
+        self.line.setLine(p.x(), p.y(), l.x2(), l.y2())
+        super(StateGraphicsItem, self).mouseMoveEvent(e)
+
+    def addTransition(self, line):
+        self.line = line
+
+
 class StateView(object):
 
     def __init__(self, name, scene=None):
@@ -12,17 +25,18 @@ class StateView(object):
 
     def draw(self):
         if not self.scene: return
+        group = StateGraphicsItem()
+        line = self.scene.addLine(0, 0, 30, 30)
+        group.addTransition(line)
+        self.scene.addItem(group)
         name_text = self.scene.addText(self.name)
-        name_text.setPos(*self.pos)
-        r = name_text.boundingRect()
-        self.bounding_rect = self.scene.addRect(r)
-        self.bounding_rect.mousePressEvent = self.on_clicked
-        self.bounding_rect.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
-        print(dir(self.bounding_rect))
-        self.bounding_rect.setPos(*self.pos)
-
-    def on_clicked(self, e):
-        print("{0} clicked".format(self.name))
+        group.addToGroup(name_text)
+        #name_text.setPos(*self.pos)
+        br = name_text.boundingRect()
+        self.bounding_rect = self.scene.addRect(br)
+        group.addToGroup(self.bounding_rect)
+        group.setFlag(QtGui.QGraphicsItem.ItemIsMovable)
+        group.setPos(*self.pos)
 
 
 class MyTest(QtGui.QGraphicsView):
@@ -35,7 +49,7 @@ class MyTest(QtGui.QGraphicsView):
     def _init_ui(self):
         scene = QtGui.QGraphicsScene()
         self.setScene(scene)
-        self.setInteractive(True)
+        #self.setInteractive(True)
 
     def draw_scene(self):
         r = 100
